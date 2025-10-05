@@ -67,6 +67,7 @@ All variables are defined in `defaults/main.yml`. Key variables include:
           - "myotherdomain.com"
         container_traefik_cloudflare_mail: "me@mycompany.com"
         container_traefik_cloudflare_token: "xxxxxx"
+```
 
 ## Cloudflare DNS01 Setup for Wildcard Certificates
 
