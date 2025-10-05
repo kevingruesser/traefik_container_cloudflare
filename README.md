@@ -11,6 +11,22 @@ support for automated Let's Encrypt certificate provisioning.
 - Docker Compose v2
 - Cloudflare account and API token for DNS-01 challenge
 
+## Rootless Docker and Port Configuration
+
+When running Docker in rootless mode, Traefik **cannot bind to ports below 1024** (e.g., 80 and 443) directly.  
+
+This role automatically handles **port redirection** from the standard HTTP and HTTPS ports to higher, configurable ports using iptables.  
+You can adjust the ports with these variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `container_traefik_http_port` | 8080 | HTTP port for Traefik in rootless mode |
+| `container_traefik_https_port` | 8443 | HTTPS port for Traefik in rootless mode |
+
+> ⚠️ The role sets up iptables rules to redirect traffic from ports 80 → `container_traefik_http_port`  
+> and 443 → `container_traefik_https_port`. Make sure your system allows iptables modifications (the tasks require `become: true`).
+
+
 ## Role Variables
 
 All variables are defined in `defaults/main.yml`. Key variables include:
