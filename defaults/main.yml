@@ -1,0 +1,43 @@
+---
+#########################################
+# Traefik Container with Cloudflare DNS #
+#########################################
+
+# Container Vars
+container_traefik_name: traefik
+container_traefik_base_dir: "/opt/docker/traefik"
+container_traefik_dockeruser_uid: {{ tenant_uid }}
+container_traefik_http_port: 8080 # Important for Rootless Docker Container. No Port <1024
+container_traefik_https_port: 8443 # Important for Rootless Docker Container. No Port <1024
+container_traefik_domain: "traefik.example.com"
+container_traefik_san_domains:
+  - "example.com"
+  - "example.org"
+container_traefik_cloudflare_mail: "your-cloudflare-email@example.com"
+container_traefik_cloudflare_token: "your-cloudflare-token"
+container_traefik_auth: 'basic' # basic or sso
+container_traefik_basicauth_user: "admin"
+container_traefik_basicauth_password: "yourpassword"
+
+# Static Traefik Routes
+container_traefik_routers:
+  dummy:
+    entryPoints:
+      - "https"
+    rule: "Host(`dummy.example.com`)"
+    middlewares:
+      - default-headers
+    tls: {}
+    service: dummy
+
+container_traefik_services:
+  dummy:
+    loadBalancer:
+      servers:
+        - url: "http://127.0.0.1"
+      passHostHeader: true
+      serversTransport: insecure-https
+
+container_traefik_serversTransports:
+  insecure-https:
+    insecureSkipVerify: true

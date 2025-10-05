@@ -1,0 +1,42 @@
+http:
+  routers:
+{% for router_name, router in container_traefik_routers.items() %}
+    {{ router_name }}:
+      entryPoints:
+{% for ep in router.entryPoints %}
+        - "{{ ep }}"
+{% endfor %}
+      rule: "{{ router.rule }}"
+{% if router.middlewares is defined and router.middlewares %}
+      middlewares:
+{% for m in router.middlewares %}
+        - {{ m }}
+{% endfor %}
+{% endif %}
+{% if router.tls is defined and router.tls %}
+      tls: {}
+{% endif %}
+      service: {{ router.service }}
+{% endfor %}
+
+  services:
+{% for service_name, service in container_traefik_services.items() %}
+    {{ service_name }}:
+      loadBalancer:
+        servers:
+{% for server in service.loadBalancer.servers %}
+          - url: "{{ server.url }}"
+{% endfor %}
+        passHostHeader: {{ service.loadBalancer.passHostHeader | default(true) | lower }}
+{% if service.loadBalancer.serversTransport is defined %}
+        serversTransport: {{ service.loadBalancer.serversTransport }}
+{% endif %}
+{% endfor %}
+
+  serversTransports:
+{% for transport_name, transport in container_traefik_serversTransports.items() %}
+    {{ transport_name }}:
+{% for key, value in transport.items() %}
+      {{ key }}: {{ value | lower if value is boolean else value }}
+{% endfor %}
+{% endfor %}

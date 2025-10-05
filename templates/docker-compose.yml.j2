@@ -1,0 +1,48 @@
+---
+services:
+  traefik:
+    image: traefik:latest
+    container_name: {{ container_traefik_name }}
+    restart: always
+    security_opt:
+      - "no-new-privileges:true"
+    networks:
+      - traefik
+    ports:
+      - ${TRAEFIK_HTTP_PORT}:80
+      - ${TRAEFIK_HTTPS_PORT}:443
+    volumes:
+      - /run/user/{{ tenant_uid }}/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik:/etc/traefik
+      - ./data/certs:/etc/certs:ro
+      - ./data/logs/traefik.log:/var/log/traefik.log
+      - ./data/logs/access.log:/var/log/crowdsec/traefik.log
+    environment:
+      - "CF_API_EMAIL=${CLOUDFLARE_MAIL:?error}"
+      - "CF_DNS_API_TOKEN=${CLOUDFLARE_TOKEN:?error}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+{% for domain in container_traefik_san_domains %}
+      - "traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].main={{ domain }}"
+      - "traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].sans=*.{{ domain }}"
+{% endfor %}
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+{% if container_traefik_auth == 'sso' %}
+      - "traefik.http.routers.traefik-secure.middlewares=authelia@docker"
+{% elif container_traefik_auth == 'basic' or container_traefik_auth is not defined %}
+      - "traefik.http.routers.traefik-secure.middlewares=basic-auth"
+      - "traefik.http.middlewares.basic-auth.basicauth.users=${TRAEFIK_BASICAUTH_USER}:${TRAEFIK_BASICAUTH_PASSWORD}"
+{% endif %}
+
+networks:
+  traefik:
+    external: true

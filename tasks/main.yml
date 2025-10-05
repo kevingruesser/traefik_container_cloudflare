@@ -1,0 +1,71 @@
+---
+- name: Redirect port 80 to rootless Port "{{ container_traefik_http_port }}"
+  ansible.builtin.iptables:
+    table: nat
+    chain: PREROUTING
+    destination_port: 80
+    jump: REDIRECT
+    to_ports: "{{ container_traefik_http_port }}"
+    comment: "Rootless Docker port redirection by Ansible"
+    state: present
+  become: true
+
+- name: Redirect port 443 to rootless Port "{{ container_traefik_https_port }}"
+  ansible.builtin.iptables:
+    table: nat
+    chain: PREROUTING
+    destination_port: 443
+    jump: REDIRECT
+    to_ports: "{{ container_traefik_https_port }}"
+    comment: "Rootless Docker port redirection by Ansible"
+    state: present
+  become: true
+
+- name: Ensure Docker network exists
+  community.docker.docker_network:
+    name: traefik
+    state: present
+    docker_host: "unix:///run/user/{{ tenant_uid }}/docker.sock"
+
+- name: Ensure data directories exist
+  ansible.builtin.file:
+    path: "{{ container_traefik_base_dir }}/data/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "traefik"
+    - "certs"
+    - "logs"
+    - "traefik/config.d"
+  notify: Restart Traefik container
+
+- name: Ensure log files exist
+  ansible.builtin.file:
+    path: "{{ container_traefik_base_dir }}/data/logs/{{ item }}"
+    state: touch
+    mode: '0644'
+  loop:
+    - "traefik.log"
+    - "access.log"
+  notify: Restart Traefik container
+
+- name: Deploy Traefik configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ container_traefik_base_dir }}/data/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: 'traefik.yml.j2', dest: 'traefik/traefik.yml' }
+    - { src: 'default.yml.j2', dest: 'traefik/config.d/default.yml' }
+    - { src: 'hosts.yml.j2', dest: 'traefik/config.d/hosts.yml' }
+  notify: Restart Traefik container
+
+- name: Deploy Docker Compose and .env files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ container_traefik_base_dir }}/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: 'docker-compose.yml.j2', dest: 'docker-compose.yml' }
+    - { src: '.env.j2', dest: '.env' }
+  notify: Restart Traefik container
