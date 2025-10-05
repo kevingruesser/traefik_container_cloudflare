@@ -3,6 +3,7 @@
   ansible.builtin.iptables:
     table: nat
     chain: PREROUTING
+    protocol: tcp
     destination_port: 80
     jump: REDIRECT
     to_ports: "{{ container_traefik_http_port }}"
@@ -14,6 +15,7 @@
   ansible.builtin.iptables:
     table: nat
     chain: PREROUTING
+    protocol: tcp
     destination_port: 443
     jump: REDIRECT
     to_ports: "{{ container_traefik_https_port }}"
