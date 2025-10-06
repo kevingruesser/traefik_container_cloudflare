@@ -7,8 +7,8 @@
 container_traefik_name: traefik
 container_traefik_base_dir: "/opt/docker/traefik"
 container_traefik_dockeruser_uid: "{{ tenant_uid }}"
-container_traefik_http_port: 8080 # Important for Rootless Docker Container. No Port <1024
-container_traefik_https_port: 8443 # Important for Rootless Docker Container. No Port <1024
+container_traefik_http_port: 80
+container_traefik_https_port: 443
 container_traefik_domain: "traefik.example.com"
 container_traefik_san_domains:
   - "example.com"

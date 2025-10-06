@@ -4,4 +4,3 @@
     project_src: "{{ container_traefik_base_dir }}"
     pull: always
     state: present
-    docker_host: "unix:///run/user/{{ tenant_uid }}/docker.sock"
